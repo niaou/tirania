@@ -47,12 +47,12 @@ Currently includes a **music module**, with more features planned in the future.
 git clone git@github.com:niaou/tirania.git
 cd tirania
 ```
-2. **Configure bot token**  
+2. **Set environment variable for bot token**  
 
-Create `src/main/resources/application.properties`:
+> The bot reads the token from the `TIRANIA_TOKEN` environment variable.
 
 ```properties
-discord.token=YOUR_DISCORD_BOT_TOKEN
+tirania.token=${TIRANIA_TOKEN:}
 ```
 
 3. **Build the project**:
