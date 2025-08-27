@@ -1,6 +1,8 @@
 package com.niaou.tiraniabot;
 
+import com.niaou.tiraniabot.adapter.MusicAdapter;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,13 +26,14 @@ public class TiraniaApplication implements CommandLineRunner {
   @Override
   public void run(String... args) {
     if (!StringUtils.hasLength(token)) {
-      logger.error("Tirania token is not set! Please set TIRANIA_TOKEN environment variable");
+      logger.error("TiRania token is not set! Please set TIRANIA_TOKEN environment variable");
       System.exit(1);
     }
     try {
-      JDABuilder.createDefault(token).build();
+      JDABuilder.createDefault(token).enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
+          .addEventListeners(new MusicAdapter()).build();
     } catch (Exception e) {
-      logger.error("Failed to start Tirania", e);
+      logger.error("Failed to start TiRania", e);
     }
   }
 
