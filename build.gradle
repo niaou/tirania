@@ -3,15 +3,23 @@ plugins {
     id 'org.springframework.boot' version '4.0.0-SNAPSHOT'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.graalvm.buildtools.native' version '0.11.0'
+    id 'com.diffplug.spotless' version '7.2.1'
 }
 
 group = 'com.niaou'
-version = '0.0.1-SNAPSHOT'
+version = "0.0.8-SNAPSHOT"
 description = 'tirania'
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(24)
+    }
+}
+
+spotless {
+    java {
+        googleJavaFormat('1.28.0')
+        target 'src/**/*.java'
     }
 }
 

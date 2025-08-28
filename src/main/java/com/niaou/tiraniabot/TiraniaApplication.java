@@ -17,21 +17,20 @@ public class TiraniaApplication implements CommandLineRunner {
   @Value("${tirania.token}")
   private String token;
 
-  public static void main(String[] args)  {
+  public static void main(String[] args) {
     SpringApplication.run(TiraniaApplication.class, args);
   }
 
   @Override
   public void run(String... args) {
     if (!StringUtils.hasLength(token)) {
-      logger.error("Tirania token is not set! Please set TIRANIA_TOKEN environment variable");
-      System.exit(1);
+      logger.error("TiRania token is not set! Please set TIRANIA_TOKEN environment variable");
+      throw new IllegalStateException("TiRania token is not set");
     }
     try {
       JDABuilder.createDefault(token).build();
     } catch (Exception e) {
-      logger.error("Failed to start Tirania", e);
+      logger.error("Failed to start TiRania", e);
     }
   }
-
 }
