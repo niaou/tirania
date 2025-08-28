@@ -14,9 +14,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout code
+      # Checkout code with full history & tags
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Setup Java
       - name: Set up JDK 24
@@ -44,6 +46,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Bump version & create tag
       - name: Bump version and push tag
@@ -51,7 +55,8 @@ jobs:
         uses: anothrNick/github-tag-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEFAULT_BUMP: patch   # can be major/minor/patch
+          DEFAULT_BUMP: patch
+          INITIAL_VERSION: 0.0.1
 
       # Create GitHub Release
       - name: Create GitHub Release
@@ -79,5 +84,5 @@ jobs:
           sed -i "s/^version = .*/version = \"${NEXT_VERSION}-SNAPSHOT\"/" build.gradle
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git commit -am "Bump version to ${NEXT_VERSION}-SNAPSHOT"
+          git commit -am "Bump version to ${NEXT_VERSION}-SNAPSHOT [skip ci]"
           git push
