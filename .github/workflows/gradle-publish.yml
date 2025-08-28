@@ -22,10 +22,11 @@ jobs:
           fetch-depth: 0
 
       - name: Check PR has release label
+        if: github.event_name == 'pull_request'
         run: |
-          LABELS="${{ github.event.pull_request.labels.*.name }}"
-          echo "PR labels: $LABELS"
-          if [[ "$LABELS" != *"release:patch"* && "$LABELS" != *"release:minor"* && "$LABELS" != *"release:major"* ]]; then
+          echo "PR labels: ${{ toJSON(github.event.pull_request.labels) }}"
+          LABELS_JSON='${{ toJSON(github.event.pull_request.labels) }}'
+          if ! echo "$LABELS_JSON" | grep -qE '"name":\s*"(release:patch|release:minor|release:major)"'; then
             echo "Error: Pull request must have one of the labels: release:patch, release:minor, release:major"
             exit 1
           fi
