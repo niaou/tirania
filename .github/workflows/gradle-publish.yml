@@ -36,11 +36,11 @@ jobs:
       - name: Build and test
         run: ./gradlew clean build
 
-      - name: Check code format
-        run: ./gradlew spotlessCheck
-
       - name: Auto-format code
         run: ./gradlew spotlessApply
+
+      - name: Check code format
+        run: ./gradlew spotlessCheck
 
       - name: Run SpotBugs
         run: ./gradlew spotbugsMain
