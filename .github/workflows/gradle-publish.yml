@@ -36,9 +36,6 @@ jobs:
       - name: Build and test
         run: ./gradlew clean build
 
-      - name: Auto-format code
-        run: ./gradlew spotlessApply
-
       - name: Check code format
         run: ./gradlew spotlessCheck
 
