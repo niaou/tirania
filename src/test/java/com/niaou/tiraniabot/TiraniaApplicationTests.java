@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-class TiraniaApplicationRunTest {
+class TiraniaApplicationTests {
 
   @Test
   void run_noToken_throwsException() {
