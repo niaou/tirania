@@ -21,6 +21,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check PR has release label
+        run: |
+          LABELS="${{ github.event.pull_request.labels.*.name }}"
+          echo "PR labels: $LABELS"
+          if [[ "$LABELS" != *"release:patch"* && "$LABELS" != *"release:minor"* && "$LABELS" != *"release:major"* ]]; then
+            echo "Error: Pull request must have one of the labels: release:patch, release:minor, release:major"
+            exit 1
+          fi
+
       - name: Set up JDK 24
         uses: actions/setup-java@v4
         with:
