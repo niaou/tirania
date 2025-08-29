@@ -1,39 +1,42 @@
 # TiRania Bot
 
 A general-purpose Discord bot built with **Java** and **JDA**.  
-Currently includes a **music module**, with more features planned in the future.
+Currently includes a **music module**🎶, with more features planned in the future.
 
 ---
 
 ## Current Features
 
 ### Music
-- Play YouTube tracks (`!play <url>`)
+- Play or search tracks (`!play <url|search>`)
+- Interactive search with button-based track selection (up to 5 results)
 - Skip to next track (`!next`)
 - Pause and resume (`!pause`, `!resume`)
 - Stop and clear queue (`!stop`)
 - Show current track (`!nowplaying`)
 - Display queue (`!queue`)
+- Auto-advance when a track ends
 
 ### Future Modules
-- Moderation commands
-- Utility commands
-- Fun/social commands
-- Integration with external APIs
+- ⚔️ Moderation commands
+- ⚡ Utility commands
+- 🎉 Fun/social commands
+- 🌐 Integration with external APIs
 
 ---
 
-## Commands
+## 📜 Commands
 
-| Command | Description |
-|---------|-------------|
-| `!play <url>` | Add a track to the queue |
-| `!next` | Skip to the next track |
-| `!queue` | Display the current queue |
-| `!pause` | Pause the currently playing track |
-| `!resume` | Resume playback |
-| `!stop` | Stop playback and clear the queue |
-| `!nowplaying` | Show the track currently playing |
+| Command              | Description                       |
+|----------------------|-----------------------------------|
+| `!play <url\search>` | Play or search a track            |
+| `!next`              | Skip to the next track            |
+| `!queue`             | Display the current queue         |
+| `!pause`             | Pause the currently playing track |
+| `!resume`            | Resume playback                   |
+| `!stop`              | Stop playback and clear the queue |
+| `!nowplaying`        | Show the track currently playing  |
+| `!help`              | Show the available commands       |
 
 > More commands will be added as the bot grows.
 
