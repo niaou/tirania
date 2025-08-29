@@ -70,11 +70,10 @@ jobs:
       - name: Determine bump type from PR labels
         id: bump-type
         run: |
-          # Default to patch
           BUMP=patch
-          if [[ "${{ github.event.pull_request.labels.*.name }}" == *"release:minor"* ]]; then
+          if ${{ contains(github.event.pull_request.labels.*.name, 'release:minor') }}; then
             BUMP=minor
-          elif [[ "${{ github.event.pull_request.labels.*.name }}" == *"release:major"* ]]; then
+          elif ${{ contains(github.event.pull_request.labels.*.name, 'release:major') }}; then
             BUMP=major
           fi
           echo "BUMP=$BUMP" >> $GITHUB_ENV
