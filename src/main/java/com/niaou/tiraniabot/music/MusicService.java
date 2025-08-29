@@ -67,6 +67,9 @@ public class MusicService {
       case "!stop" -> stopAndClear(event, guild, musicManager);
       case "!nowplaying" -> nowPlaying(event.getChannel(), musicManager);
       case "!help" -> help(event);
+      default -> {
+        // ignore
+      }
     }
   }
 
@@ -301,5 +304,10 @@ public class MusicService {
     else return String.format("%d:%02d", minutes, seconds);
   }
 
-  public record SelectionData(GuildMusicManager manager, List<AudioTrack> tracks) {}
+  public record SelectionData(GuildMusicManager manager, List<AudioTrack> tracks) {
+    public SelectionData(GuildMusicManager manager, List<AudioTrack> tracks) {
+      this.manager = manager;
+      this.tracks = List.copyOf(tracks);
+    }
+  }
 }
