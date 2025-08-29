@@ -1,4 +1,4 @@
-package com.niaou.tiraniabot.handler;
+package com.niaou.tiraniabot.music;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.playback.MutableAudioFrame;
@@ -13,7 +13,7 @@ public class MusicSendHandler implements AudioSendHandler {
 
   public MusicSendHandler(AudioPlayer player) {
     this.audioPlayer = player;
-    this.buffer = ByteBuffer.allocate(1024); // 1024 bytes for 20ms frame
+    this.buffer = ByteBuffer.allocate(1024);
     this.frame = new MutableAudioFrame();
     this.frame.setBuffer(buffer);
   }
@@ -34,4 +34,5 @@ public class MusicSendHandler implements AudioSendHandler {
   public boolean isOpus() {
     return true;
   }
+
 }

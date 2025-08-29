@@ -1,6 +1,6 @@
 package com.niaou.tiraniabot;
 
-import com.niaou.tiraniabot.adapter.MusicAdapter;
+import com.niaou.tiraniabot.music.MusicAdapter;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.slf4j.Logger;
@@ -16,8 +16,14 @@ public class TiraniaApplication implements CommandLineRunner {
 
   private static final Logger logger = LoggerFactory.getLogger(TiraniaApplication.class);
 
+  private final MusicAdapter musicAdapter;
+
   @Value("${tirania.token}")
   private String token;
+
+  public TiraniaApplication(MusicAdapter musicAdapter) {
+    this.musicAdapter = musicAdapter;
+  }
 
   public static void main(String[] args)  {
     SpringApplication.run(TiraniaApplication.class, args);
@@ -31,7 +37,7 @@ public class TiraniaApplication implements CommandLineRunner {
     }
     try {
       JDABuilder.createDefault(token).enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
-          .addEventListeners(new MusicAdapter()).build();
+          .addEventListeners(musicAdapter).build();
     } catch (Exception e) {
       logger.error("Failed to start TiRania", e);
     }
