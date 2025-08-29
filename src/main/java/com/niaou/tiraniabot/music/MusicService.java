@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
-import net.dv8tion.jda.api.entities.channel.Channel;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
@@ -92,30 +91,33 @@ public class MusicService {
     AudioTrack track = data.tracks.get(index);
     data.manager.queue(track);
 
-    String newContent = event.getMessage().getContentRaw() +
-        "\n\n✅ Selected: " + track.getInfo().title;
+    String newContent =
+        event.getMessage().getContentRaw() + "\n\n✅ Selected: " + track.getInfo().title;
 
-    event.editMessage(newContent)
-        .setComponents()
-        .queue();
+    event.editMessage(newContent).setComponents().queue();
   }
 
   public GuildMusicManager getGuildMusicManager(Guild guild, MessageChannel channel) {
-    return musicManagers.computeIfAbsent(guild.getIdLong(), id -> {
-      var player = playerManager.createPlayer();
-      var manager = new GuildMusicManager(player, new LinkedList<>(), channel);
+    return musicManagers.computeIfAbsent(
+        guild.getIdLong(),
+        id -> {
+          var player = playerManager.createPlayer();
+          var manager = new GuildMusicManager(player, new LinkedList<>(), channel);
 
-      AudioManager audioManager = guild.getAudioManager();
-      audioManager.setSendingHandler(new MusicSendHandler(player));
-      return manager;
-    });
+          AudioManager audioManager = guild.getAudioManager();
+          audioManager.setSendingHandler(new MusicSendHandler(player));
+          return manager;
+        });
   }
 
   public void playMusic(MessageReceivedEvent event, GuildMusicManager musicManager, String query) {
     Guild guild = event.getGuild();
     List<VoiceChannel> channels = guild.getVoiceChannelsByName(MUSIC_CHANNEL_NAME, true);
     if (channels.isEmpty()) {
-      event.getChannel().sendMessage("No '" + MUSIC_CHANNEL_NAME + "' voice channel found!").queue();
+      event
+          .getChannel()
+          .sendMessage("No '" + MUSIC_CHANNEL_NAME + "' voice channel found!")
+          .queue();
       return;
     }
 
@@ -125,34 +127,49 @@ public class MusicService {
 
     String loadQuery = query.startsWith("http") ? query : "ytsearch:" + query;
 
-    playerManager.loadItemOrdered(musicManager, loadQuery, new AudioLoadResultHandler() {
-      @Override
-      public void trackLoaded(AudioTrack track) {
-        musicManager.queue(track);
-        event.getChannel().sendMessage((musicManager.getPlayingTrack() == track ? "🎵 Now playing: " : "➕ Queued: ") + track.getInfo().title).queue();
-      }
+    playerManager.loadItemOrdered(
+        musicManager,
+        loadQuery,
+        new AudioLoadResultHandler() {
+          @Override
+          public void trackLoaded(AudioTrack track) {
+            musicManager.queue(track);
+            event
+                .getChannel()
+                .sendMessage(
+                    (musicManager.getPlayingTrack() == track ? "🎵 Now playing: " : "➕ Queued: ")
+                        + track.getInfo().title)
+                .queue();
+          }
 
-      @Override
-      public void playlistLoaded(AudioPlaylist playlist) {
-        if (!playlist.isSearchResult()) {
-          playlist.getTracks().forEach(musicManager::queue);
-          channel.sendMessage("📜 Playlist queued! Total tracks added: " + playlist.getTracks().size()).queue();
-        } else {
-          List<AudioTrack> topTracks = playlist.getTracks().subList(0, Math.min(5, playlist.getTracks().size()));
-          sendSelectionMessage(event, musicManager, topTracks);
-        }
-      }
+          @Override
+          public void playlistLoaded(AudioPlaylist playlist) {
+            if (!playlist.isSearchResult()) {
+              playlist.getTracks().forEach(musicManager::queue);
+              channel
+                  .sendMessage(
+                      "📜 Playlist queued! Total tracks added: " + playlist.getTracks().size())
+                  .queue();
+            } else {
+              List<AudioTrack> topTracks =
+                  playlist.getTracks().subList(0, Math.min(5, playlist.getTracks().size()));
+              sendSelectionMessage(event, musicManager, topTracks);
+            }
+          }
 
-      @Override
-      public void noMatches() {
-        event.getChannel().sendMessage("❌ No results found for: " + query).queue();
-      }
+          @Override
+          public void noMatches() {
+            event.getChannel().sendMessage("❌ No results found for: " + query).queue();
+          }
 
-      @Override
-      public void loadFailed(FriendlyException exception) {
-        event.getChannel().sendMessage("⚠ Failed to load track: " + exception.getMessage()).queue();
-      }
-    });
+          @Override
+          public void loadFailed(FriendlyException exception) {
+            event
+                .getChannel()
+                .sendMessage("⚠ Failed to load track: " + exception.getMessage())
+                .queue();
+          }
+        });
   }
 
   private void skip(MessageReceivedEvent event, GuildMusicManager manager) {
@@ -160,7 +177,10 @@ public class MusicService {
       event.getChannel().sendMessage("No track in the queue!").queue();
     } else {
       AudioTrack next = manager.queue.peek();
-      event.getChannel().sendMessage("⏭ Skipped to next track \n🎵 Now playing: " + next.getInfo().title).queue();
+      event
+          .getChannel()
+          .sendMessage("⏭ Skipped to next track \n🎵 Now playing: " + next.getInfo().title)
+          .queue();
       manager.nextTrack();
     }
   }
@@ -192,13 +212,13 @@ public class MusicService {
   private void nowPlaying(MessageChannel channel, GuildMusicManager manager) {
     AudioTrack track = manager.getPlayingTrack();
     if (track != null) {
-      String msg = String.format(
-          "🎶 Now playing: **%s** [`%s / %s`] <%s>",
-          track.getInfo().title,
-          formatTime(track.getPosition()),
-          formatTime(track.getDuration()),
-          track.getInfo().uri
-      );
+      String msg =
+          String.format(
+              "🎶 Now playing: **%s** [`%s / %s`] <%s>",
+              track.getInfo().title,
+              formatTime(track.getPosition()),
+              formatTime(track.getDuration()),
+              track.getInfo().uri);
       channel.sendMessage(msg).queue();
     } else {
       channel.sendMessage("Nothing is playing.").queue();
@@ -225,7 +245,8 @@ public class MusicService {
     event.getChannel().sendMessage(sb.toString()).queue();
   }
 
-  private void sendSelectionMessage(MessageReceivedEvent event, GuildMusicManager manager, List<AudioTrack> tracks) {
+  private void sendSelectionMessage(
+      MessageReceivedEvent event, GuildMusicManager manager, List<AudioTrack> tracks) {
     StringBuilder sb = new StringBuilder("Select a track to play:\n");
     for (int i = 0; i < tracks.size(); i++) {
       sb.append(i + 1).append(". ").append(tracks.get(i).getInfo().title).append("\n");
@@ -241,12 +262,15 @@ public class MusicService {
       rows.add(ActionRow.of(buttons.subList(i, Math.min(i + 5, buttons.size()))));
     }
 
-    MessageCreateBuilder builder = new MessageCreateBuilder()
-        .setContent(sb.toString())
-        .addComponents(rows);
+    MessageCreateBuilder builder =
+        new MessageCreateBuilder().setContent(sb.toString()).addComponents(rows);
 
-    event.getChannel().sendMessage(builder.build())
-        .queue(message -> pendingSelections.put(message.getIdLong(), new SelectionData(manager, tracks)));
+    event
+        .getChannel()
+        .sendMessage(builder.build())
+        .queue(
+            message ->
+                pendingSelections.put(message.getIdLong(), new SelectionData(manager, tracks)));
   }
 
   private void help(MessageReceivedEvent event) {
@@ -277,9 +301,5 @@ public class MusicService {
     else return String.format("%d:%02d", minutes, seconds);
   }
 
-  public record SelectionData(GuildMusicManager manager, List<AudioTrack> tracks) {
-
-  }
-
+  public record SelectionData(GuildMusicManager manager, List<AudioTrack> tracks) {}
 }
-

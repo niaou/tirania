@@ -34,5 +34,4 @@ public class MusicSendHandler implements AudioSendHandler {
   public boolean isOpus() {
     return true;
   }
-
 }

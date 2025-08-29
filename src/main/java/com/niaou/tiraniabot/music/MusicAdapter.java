@@ -16,8 +16,9 @@ public class MusicAdapter extends ListenerAdapter {
 
   @Override
   public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-    if (!event.isFromGuild() || event.getAuthor().isBot() ||
-        !event.getChannel().getName().equalsIgnoreCase(MUSIC_CHANNEL_NAME)) return;
+    if (!event.isFromGuild()
+        || event.getAuthor().isBot()
+        || !event.getChannel().getName().equalsIgnoreCase(MUSIC_CHANNEL_NAME)) return;
 
     musicService.handleMessage(event);
   }
@@ -26,5 +27,4 @@ public class MusicAdapter extends ListenerAdapter {
   public void onButtonInteraction(ButtonInteractionEvent event) {
     musicService.handleButton(event);
   }
-
 }

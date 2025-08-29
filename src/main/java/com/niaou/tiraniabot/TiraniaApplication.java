@@ -25,7 +25,7 @@ public class TiraniaApplication implements CommandLineRunner {
     this.musicAdapter = musicAdapter;
   }
 
-  public static void main(String[] args)  {
+  public static void main(String[] args) {
     SpringApplication.run(TiraniaApplication.class, args);
   }
 
@@ -33,14 +33,15 @@ public class TiraniaApplication implements CommandLineRunner {
   public void run(String... args) {
     if (!StringUtils.hasLength(token)) {
       logger.error("TiRania token is not set! Please set TIRANIA_TOKEN environment variable");
-      System.exit(1);
+      throw new IllegalStateException("TiRania token is not set");
     }
     try {
-      JDABuilder.createDefault(token).enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
-          .addEventListeners(musicAdapter).build();
+      JDABuilder.createDefault(token)
+          .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
+          .addEventListeners(musicAdapter)
+          .build();
     } catch (Exception e) {
       logger.error("Failed to start TiRania", e);
     }
   }
-
 }

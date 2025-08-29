@@ -10,7 +10,7 @@ import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 public class GuildMusicManager extends AudioEventAdapter {
 
   public final AudioPlayer player;
-  public final Queue<AudioTrack> queue ;
+  public final Queue<AudioTrack> queue;
   public final MessageChannel channel;
 
   public GuildMusicManager(AudioPlayer player, Queue<AudioTrack> queue, MessageChannel channel) {
@@ -61,5 +61,4 @@ public class GuildMusicManager extends AudioEventAdapter {
       }
     }
   }
-
 }
