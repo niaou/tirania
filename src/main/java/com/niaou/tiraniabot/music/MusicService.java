@@ -1,5 +1,6 @@
 package com.niaou.tiraniabot.music;
 
+import com.niaou.tiraniabot.service.MessagingService;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
@@ -38,10 +39,12 @@ public class MusicService {
   private final AudioPlayerManager playerManager;
   private final Map<Long, GuildMusicManager> musicManagers = new ConcurrentHashMap<>();
   private final Map<Long, SelectionData> pendingSelections = new ConcurrentHashMap<>();
+  private final MessagingService messagingService;
   private static final String MUSIC_CHANNEL_NAME = "music";
   private static final Logger logger = LoggerFactory.getLogger(MusicService.class);
 
-  public MusicService() {
+  public MusicService(MessagingService messagingService) {
+    this.messagingService = messagingService;
     this.playerManager = new DefaultAudioPlayerManager();
     YoutubeAudioSourceManager youtubeManager = new YoutubeAudioSourceManager(true);
     youtubeManager.useOauth2(null, false);
@@ -64,7 +67,8 @@ public class MusicService {
 
     if (musicVoiceChannel == null) {
       logger.error("Music voice channel not defined!");
-      channel.sendMessage("Music voice channel not defined! Please contact a mod").queue();
+      messagingService.sendChannelMessage(
+          channel, "Music voice channel not defined! Please contact a mod");
       return;
     }
 
@@ -76,18 +80,18 @@ public class MusicService {
     switch (command) {
       case "!play" -> {
         if (parts.length < 2) {
-          channel.sendMessage("Usage: !play <URL or keywords>").queue();
+          messagingService.sendChannelMessage(channel, "Usage: !play <URL or keywords>");
           return;
         }
         playMusic(event, musicManager, parts[1]);
       }
-      case "!next" -> skip(event, musicManager);
-      case "!queue" -> displayQueue(event, musicManager);
-      case "!pause" -> pause(event, musicManager);
-      case "!resume" -> resume(event, musicManager);
-      case "!stop" -> stopAndClear(event, guild, musicManager);
+      case "!next" -> skip(channel, musicManager);
+      case "!queue" -> displayQueue(channel, musicManager);
+      case "!pause" -> pause(channel, musicManager);
+      case "!resume" -> resume(channel, musicManager);
+      case "!stop" -> stopAndClear(channel, guild, musicManager);
       case "!nowplaying" -> nowPlaying(event.getChannel(), musicManager);
-      case "!help" -> help(event);
+      case "!help" -> help(channel);
       default -> {
         // ignore
       }
@@ -97,18 +101,20 @@ public class MusicService {
   public void handleButton(ButtonInteractionEvent event) {
     long messageId = event.getMessageIdLong();
     SelectionData data = pendingSelections.remove(messageId);
-    if (data == null) return;
+    if (data == null) {
+      return;
+    }
 
     int index;
     try {
       index = Integer.parseInt(event.getComponentId().split("_")[1]);
     } catch (NumberFormatException e) {
-      event.reply("Invalid selection!").setEphemeral(true).queue();
+      messagingService.replyEphemeralMessage(event, "Invalid selection!");
       return;
     }
 
     if (index < 0 || index >= data.tracks.size()) {
-      event.reply("Selection out of bounds!").setEphemeral(true).queue();
+      messagingService.replyEphemeralMessage(event, "Selection out of bounds!");
       return;
     }
 
@@ -118,7 +124,7 @@ public class MusicService {
     String newContent =
         event.getMessage().getContentRaw() + "\n\n✅ Selected: " + track.getInfo().title;
 
-    event.editMessage(newContent).setComponents().queue();
+    messagingService.editEventMessage(event, newContent);
   }
 
   public GuildMusicManager getGuildMusicManager(Guild guild, MessageChannel channel) {
@@ -126,7 +132,8 @@ public class MusicService {
         guild.getIdLong(),
         id -> {
           var player = playerManager.createPlayer();
-          var manager = new GuildMusicManager(player, new LinkedList<>(), channel);
+          var manager =
+              new GuildMusicManager(player, new LinkedList<>(), channel, messagingService);
 
           AudioManager audioManager = guild.getAudioManager();
           audioManager.setSendingHandler(new MusicSendHandler(player));
@@ -136,18 +143,18 @@ public class MusicService {
 
   public void playMusic(MessageReceivedEvent event, GuildMusicManager musicManager, String query) {
     Guild guild = event.getGuild();
+    MessageChannel channel = event.getChannel();
     List<VoiceChannel> channels = guild.getVoiceChannelsByName(MUSIC_CHANNEL_NAME, true);
     if (channels.isEmpty()) {
-      event
-          .getChannel()
-          .sendMessage("No '" + MUSIC_CHANNEL_NAME + "' voice channel found!")
-          .queue();
+      messagingService.sendChannelMessage(
+          channel, "No '" + MUSIC_CHANNEL_NAME + "' voice channel found!");
       return;
     }
 
-    VoiceChannel channel = channels.getFirst();
     AudioManager audioManager = guild.getAudioManager();
-    if (!audioManager.isConnected()) audioManager.openAudioConnection(channel);
+    if (!audioManager.isConnected()) {
+      audioManager.openAudioConnection(channels.getFirst());
+    }
 
     String loadQuery = query.startsWith("http") ? query : "ytsearch:" + query;
 
@@ -170,67 +177,64 @@ public class MusicService {
           public void playlistLoaded(AudioPlaylist playlist) {
             if (!playlist.isSearchResult()) {
               playlist.getTracks().forEach(musicManager::queue);
-              channel
-                  .sendMessage(
-                      "📜 Playlist queued! Total tracks added: " + playlist.getTracks().size())
-                  .queue();
+              messagingService.sendChannelMessage(
+                  channel,
+                  "📜 Playlist queued! Total tracks added: " + playlist.getTracks().size());
             } else {
               List<AudioTrack> topTracks =
                   playlist.getTracks().subList(0, Math.min(5, playlist.getTracks().size()));
-              sendSelectionMessage(event, musicManager, topTracks);
+              sendSelectionMessage(channel, musicManager, topTracks);
             }
           }
 
           @Override
           public void noMatches() {
-            event.getChannel().sendMessage("❌ No results found for: " + query).queue();
+            messagingService.sendChannelMessage(channel, "❌ No results found for: " + query);
           }
 
           @Override
           public void loadFailed(FriendlyException exception) {
-            event
-                .getChannel()
-                .sendMessage("⚠ Failed to load track: " + exception.getMessage())
-                .queue();
+            messagingService.sendChannelMessage(
+                channel, "⚠ Failed to load track: " + exception.getMessage());
           }
         });
   }
 
-  private void skip(MessageReceivedEvent event, GuildMusicManager manager) {
+  private void skip(MessageChannel channel, GuildMusicManager manager) {
     if (manager.queue.isEmpty()) {
-      event.getChannel().sendMessage("No track in the queue!").queue();
+      messagingService.sendChannelMessage(channel, "No track in the queue!");
     } else {
       AudioTrack next = manager.queue.peek();
-      event
-          .getChannel()
-          .sendMessage("⏭ Skipped to next track \n🎵 Now playing: " + next.getInfo().title)
-          .queue();
+      messagingService.sendChannelMessage(
+          channel, "⏭ Skipped to next track \n🎵 Now playing: " + next.getInfo().title);
       manager.nextTrack();
     }
   }
 
-  private void pause(MessageReceivedEvent event, GuildMusicManager manager) {
+  private void pause(MessageChannel channel, GuildMusicManager manager) {
     if (manager.getPlayingTrack() != null && !manager.isPaused()) {
       manager.pause();
-      event.getChannel().sendMessage("⏸ Paused!").queue();
+      messagingService.sendChannelMessage(channel, "⏸ Paused!");
     } else {
-      event.getChannel().sendMessage("No track is playing or already paused!").queue();
+      messagingService.sendChannelMessage(channel, "No track is playing or already paused!");
     }
   }
 
-  private void resume(MessageReceivedEvent event, GuildMusicManager manager) {
+  private void resume(MessageChannel channel, GuildMusicManager manager) {
     if (manager.getPlayingTrack() != null && manager.isPaused()) {
       manager.resume();
-      event.getChannel().sendMessage("▶ Resumed!").queue();
+      messagingService.sendChannelMessage(channel, "▶ Resumed!");
     } else {
-      event.getChannel().sendMessage("No track is paused!").queue();
+      messagingService.sendChannelMessage(channel, "No track is paused!");
     }
   }
 
-  private void stopAndClear(MessageReceivedEvent event, Guild guild, GuildMusicManager manager) {
+  private void stopAndClear(MessageChannel channel, Guild guild, GuildMusicManager manager) {
     manager.stopAndClear();
-    if (guild.getAudioManager().isConnected()) guild.getAudioManager().closeAudioConnection();
-    event.getChannel().sendMessage("⏹ Stopped playback and cleared the queue!").queue();
+    if (guild.getAudioManager().isConnected()) {
+      guild.getAudioManager().closeAudioConnection();
+    }
+    messagingService.sendChannelMessage(channel, "⏹ Stopped playback and cleared the queue!");
   }
 
   private void nowPlaying(MessageChannel channel, GuildMusicManager manager) {
@@ -243,21 +247,23 @@ public class MusicService {
               formatTime(track.getPosition()),
               formatTime(track.getDuration()),
               track.getInfo().uri);
-      channel.sendMessage(msg).queue();
+      messagingService.sendChannelMessage(channel, msg);
     } else {
-      channel.sendMessage("Nothing is playing.").queue();
+      messagingService.sendChannelMessage(channel, "Nothing is playing.");
     }
   }
 
-  private void displayQueue(MessageReceivedEvent event, GuildMusicManager manager) {
+  private void displayQueue(MessageChannel channel, GuildMusicManager manager) {
     if (manager.queue.isEmpty() && manager.getPlayingTrack() == null) {
-      event.getChannel().sendMessage("The queue is empty!").queue();
+      messagingService.sendChannelMessage(channel, "The queue is empty!");
       return;
     }
 
     StringBuilder sb = new StringBuilder();
     AudioTrack current = manager.getPlayingTrack();
-    if (current != null) sb.append("🎵 Now playing: ").append(current.getInfo().title).append("\n");
+    if (current != null) {
+      sb.append("🎵 Now playing: ").append(current.getInfo().title).append("\n");
+    }
 
     if (!manager.queue.isEmpty()) {
       sb.append("⏭ Up next:\n");
@@ -266,11 +272,11 @@ public class MusicService {
         sb.append(i++).append(". ").append(track.getInfo().title).append("\n");
       }
     }
-    event.getChannel().sendMessage(sb.toString()).queue();
+    messagingService.sendChannelMessage(channel, sb.toString());
   }
 
   private void sendSelectionMessage(
-      MessageReceivedEvent event, GuildMusicManager manager, List<AudioTrack> tracks) {
+      MessageChannel channel, GuildMusicManager manager, List<AudioTrack> tracks) {
     StringBuilder sb = new StringBuilder("Select a track to play:\n");
     for (int i = 0; i < tracks.size(); i++) {
       sb.append(i + 1).append(". ").append(tracks.get(i).getInfo().title).append("\n");
@@ -289,15 +295,13 @@ public class MusicService {
     MessageCreateBuilder builder =
         new MessageCreateBuilder().setContent(sb.toString()).addComponents(rows);
 
-    event
-        .getChannel()
-        .sendMessage(builder.build())
-        .queue(
-            message ->
-                pendingSelections.put(message.getIdLong(), new SelectionData(manager, tracks)));
+    messagingService.sendChannelMessage(
+        channel,
+        builder.build(),
+        message -> pendingSelections.put(message.getIdLong(), new SelectionData(manager, tracks)));
   }
 
-  private void help(MessageReceivedEvent event) {
+  private void help(MessageChannel channel) {
     EmbedBuilder embed = new EmbedBuilder();
     embed.setTitle("🎵 Music Commands");
     embed.setColor(Color.CYAN);
@@ -312,7 +316,7 @@ public class MusicService {
     embed.addField("!nowplaying", "Show the currently playing track", false);
     embed.addField("!help", "Show this help message", false);
 
-    event.getChannel().sendMessageEmbeds(embed.build()).queue();
+    messagingService.sendChannelEmbedMessage(channel, embed.build());
   }
 
   private String formatTime(long millis) {
@@ -321,27 +325,32 @@ public class MusicService {
     long hours = minutes / 60;
     seconds %= 60;
     minutes %= 60;
-    if (hours > 0) return String.format("%d:%02d:%02d", hours, minutes, seconds);
-    else return String.format("%d:%02d", minutes, seconds);
+    if (hours > 0) {
+      return String.format("%d:%02d:%02d", hours, minutes, seconds);
+    } else {
+      return String.format("%d:%02d", minutes, seconds);
+    }
   }
 
   private boolean ensureUserInMusicVoiceChannel(
-      Member member, MessageChannel channel, AudioChannel musicVoiceChannel) {
+      Member member, MessageChannel channel, AudioChannel musicAudioChannel) {
     GuildVoiceState userVoiceState = member.getVoiceState();
 
-    if (!member.hasPermission(musicVoiceChannel, Permission.VOICE_CONNECT)) {
-      sendPrivateMessage(
-          member, "🚫 You don’t have permission to join the music channel. Please contact a mod");
+    if (!member.hasPermission(musicAudioChannel, Permission.VOICE_CONNECT)) {
+      messagingService.sendPrivateOrFallbackMessage(
+          member,
+          channel,
+          "🚫 You don’t have permission to join and queue tracks in the music channel. Please contact a mod");
       return false;
     }
 
     if (userVoiceState == null || !userVoiceState.inAudioChannel()) {
-      channel
-          .sendMessage(
-              "❌ You need to join the <#"
-                  + musicVoiceChannel.getId()
-                  + "> voice channel to use music commands!")
-          .queue();
+      messagingService.sendTemporaryMessage(
+          channel,
+          "❌ You need to join the <#"
+              + musicAudioChannel.getId()
+              + "> voice channel to use music commands!",
+          30);
       return false;
     }
 
@@ -351,7 +360,7 @@ public class MusicService {
       channel
           .sendMessage(
               "🎶 Music commands are only allowed for users joined in the <#"
-                  + musicVoiceChannel.getId()
+                  + musicAudioChannel.getId()
                   + "> voice channel.")
           .queue();
       return false;
@@ -360,14 +369,8 @@ public class MusicService {
     return true;
   }
 
-  private void sendPrivateMessage(Member member, String message) {
-    member
-        .getUser()
-        .openPrivateChannel()
-        .queue(privateChannel -> privateChannel.sendMessage(message).queue());
-  }
-
   public record SelectionData(GuildMusicManager manager, List<AudioTrack> tracks) {
+
     public SelectionData(GuildMusicManager manager, List<AudioTrack> tracks) {
       this.manager = manager;
       this.tracks = List.copyOf(tracks);

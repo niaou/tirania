@@ -1,5 +1,6 @@
 package com.niaou.tiraniabot.music;
 
+import com.niaou.tiraniabot.service.MessagingService;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
@@ -12,9 +13,15 @@ public class GuildMusicManager extends AudioEventAdapter {
   public final AudioPlayer player;
   public final Queue<AudioTrack> queue;
   public final MessageChannel channel;
+  public final MessagingService messagingService;
 
-  public GuildMusicManager(AudioPlayer player, Queue<AudioTrack> queue, MessageChannel channel) {
+  public GuildMusicManager(
+      AudioPlayer player,
+      Queue<AudioTrack> queue,
+      MessageChannel channel,
+      MessagingService messagingService) {
     this.player = player;
+    this.messagingService = messagingService;
     this.player.addListener(this);
     this.queue = queue;
     this.channel = channel;
@@ -57,7 +64,7 @@ public class GuildMusicManager extends AudioEventAdapter {
       AudioTrack next = queue.peek();
       if (next != null) {
         nextTrack();
-        channel.sendMessage("▶ Now playing: " + next.getInfo().title).queue();
+        messagingService.sendChannelMessage(channel, "▶ Now playing: " + next.getInfo().title);
       }
     }
   }
