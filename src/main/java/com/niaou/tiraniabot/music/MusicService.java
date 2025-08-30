@@ -15,8 +15,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.GuildVoiceState;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.AudioChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -24,6 +28,8 @@ import net.dv8tion.jda.api.interactions.components.ActionRow;
 import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.managers.AudioManager;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,6 +39,7 @@ public class MusicService {
   private final Map<Long, GuildMusicManager> musicManagers = new ConcurrentHashMap<>();
   private final Map<Long, SelectionData> pendingSelections = new ConcurrentHashMap<>();
   private static final String MUSIC_CHANNEL_NAME = "music";
+  private static final Logger logger = LoggerFactory.getLogger(MusicService.class);
 
   public MusicService() {
     this.playerManager = new DefaultAudioPlayerManager();
@@ -51,6 +58,20 @@ public class MusicService {
     MessageChannel channel = event.getChannel();
     Guild guild = event.getGuild();
     GuildMusicManager musicManager = getGuildMusicManager(guild, channel);
+
+    AudioChannel musicVoiceChannel =
+        guild.getVoiceChannelsByName(MUSIC_CHANNEL_NAME, true).stream().findFirst().orElse(null);
+
+    if (musicVoiceChannel == null) {
+      logger.error("Music voice channel not defined!");
+      channel.sendMessage("Music voice channel not defined! Please contact a mod").queue();
+      return;
+    }
+
+    if (event.getMember() == null
+        || !ensureUserInMusicVoiceChannel(event.getMember(), channel, musicVoiceChannel)) {
+      return;
+    }
 
     switch (command) {
       case "!play" -> {
@@ -302,6 +323,48 @@ public class MusicService {
     minutes %= 60;
     if (hours > 0) return String.format("%d:%02d:%02d", hours, minutes, seconds);
     else return String.format("%d:%02d", minutes, seconds);
+  }
+
+  private boolean ensureUserInMusicVoiceChannel(
+      Member member, MessageChannel channel, AudioChannel musicVoiceChannel) {
+    GuildVoiceState userVoiceState = member.getVoiceState();
+
+    if (!member.hasPermission(musicVoiceChannel, Permission.VOICE_CONNECT)) {
+      sendPrivateMessage(
+          member, "🚫 You don’t have permission to join the music channel. Please contact a mod");
+      return false;
+    }
+
+    if (userVoiceState == null || !userVoiceState.inAudioChannel()) {
+      channel
+          .sendMessage(
+              "❌ You need to join the <#"
+                  + musicVoiceChannel.getId()
+                  + "> voice channel to use music commands!")
+          .queue();
+      return false;
+    }
+
+    AudioChannel userChannel = userVoiceState.getChannel();
+
+    if (userChannel == null || !userChannel.getName().equalsIgnoreCase(MUSIC_CHANNEL_NAME)) {
+      channel
+          .sendMessage(
+              "🎶 Music commands are only allowed for users joined in the <#"
+                  + musicVoiceChannel.getId()
+                  + "> voice channel.")
+          .queue();
+      return false;
+    }
+
+    return true;
+  }
+
+  private void sendPrivateMessage(Member member, String message) {
+    member
+        .getUser()
+        .openPrivateChannel()
+        .queue(privateChannel -> privateChannel.sendMessage(message).queue());
   }
 
   public record SelectionData(GuildMusicManager manager, List<AudioTrack> tracks) {
