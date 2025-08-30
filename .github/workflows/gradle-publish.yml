@@ -40,18 +40,6 @@ jobs:
             exit 1
           fi
 
-      - name: Determine bump type from PR labels
-        id: set-bump
-        run: |
-          BUMP=patch
-          LABELS=$(echo '${{ toJSON(github.event.pull_request.labels) }}' | jq -r '.[].name')
-          if echo "$LABELS" | grep -q "release:minor"; then
-            BUMP=minor
-          elif echo "$LABELS" | grep -q "release:major"; then
-            BUMP=major
-          fi
-          echo "bump=$BUMP" >> $GITHUB_OUTPUT
-
       - name: Build and test
         run: ./gradlew clean build
 
@@ -72,29 +60,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install GitHub CLI
-        run: sudo apt install gh -y
-
       - name: Determine release bump
         id: bump
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
-            # Direct push to main → patch
-            echo "BUMP=patch" >> $GITHUB_OUTPUT
-          else
-            # Merge from PR → read PR label
-            PR_NUMBER=$(gh pr list --state merged --search "${GITHUB_SHA}" --json number -q '.[0].number')
-            LABELS=$(gh pr view $PR_NUMBER --json labels -q '.labels[].name')
-            if [[ "$LABELS" =~ release:major ]]; then
-              echo "BUMP=major" >> $GITHUB_OUTPUT
-            elif [[ "$LABELS" =~ release:minor ]]; then
-              echo "BUMP=minor" >> $GITHUB_OUTPUT
-            else
-              echo "BUMP=patch" >> $GITHUB_OUTPUT
-            fi
-          fi
+         run: |
+           COMMIT_MSG=$(git log -1 --pretty=%B)
+           echo "Commit message: $COMMIT_MSG"
+           if echo "$COMMIT_MSG" | grep -q "BREAKING CHANGE"; then
+             echo "bump=major" >> $GITHUB_OUTPUT
+           elif echo "$COMMIT_MSG" | grep -qiE "^feat"; then
+             echo "bump=minor" >> $GITHUB_OUTPUT
+           else
+             echo "bump=patch" >> $GITHUB_OUTPUT
+           fi
 
       - name: Set up JDK 24
         uses: actions/setup-java@v4
