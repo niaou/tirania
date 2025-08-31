@@ -51,4 +51,21 @@ public class CommandRegistry {
     }
     return instance;
   }
+
+  public void register(Command cmd) {
+    for (Context context : cmd.getContexts()) {
+      Map<String, Command> contextCommands =
+          commands.computeIfAbsent(context.getValue(), _ -> new HashMap<>());
+
+      contextCommands.put(cmd.getName().toLowerCase(), cmd);
+
+      for (String alias : cmd.getAliases()) {
+        contextCommands.put(alias.toLowerCase(), cmd);
+      }
+    }
+  }
+
+  public static void reset() {
+    instance = new CommandRegistry(List.of());
+  }
 }
