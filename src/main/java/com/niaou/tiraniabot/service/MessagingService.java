@@ -31,6 +31,6 @@ public interface MessagingService {
   /** Reply an ephemeral message to an event. */
   void replyEphemeralMessage(GenericComponentInteractionCreateEvent event, String message);
 
-  /** Edit and event message. */
+  /** Edit an event message. */
   void editEventMessage(GenericComponentInteractionCreateEvent event, String message);
 }

@@ -1,7 +1,8 @@
 package com.niaou.tiraniabot;
 
-import com.niaou.tiraniabot.music.MusicAdapter;
+import java.util.List;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,13 +17,13 @@ public class TiraniaApplication implements CommandLineRunner {
 
   private static final Logger logger = LoggerFactory.getLogger(TiraniaApplication.class);
 
-  private final MusicAdapter musicAdapter;
+  private final List<ListenerAdapter> adapters;
 
   @Value("${tirania.token}")
   private String token;
 
-  public TiraniaApplication(MusicAdapter musicAdapter) {
-    this.musicAdapter = musicAdapter;
+  public TiraniaApplication(List<ListenerAdapter> adapters) {
+    this.adapters = adapters;
   }
 
   public static void main(String[] args) {
@@ -36,10 +37,11 @@ public class TiraniaApplication implements CommandLineRunner {
       throw new IllegalStateException("TiRania token is not set");
     }
     try {
-      JDABuilder.createDefault(token)
-          .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
-          .addEventListeners(musicAdapter)
-          .build();
+      JDABuilder builder =
+          JDABuilder.createDefault(token)
+              .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
+      adapters.forEach(builder::addEventListeners);
+      builder.build();
     } catch (Exception e) {
       logger.error("Failed to start TiRania", e);
     }
