@@ -31,7 +31,7 @@ public class MusicService {
 
   private final AudioPlayerManager playerManager;
   private final Map<Long, GuildMusicManager> musicManagers = new ConcurrentHashMap<>();
-  private final Map<Long, SelectionData> pendingSelections = new ConcurrentHashMap<>();
+  final Map<Long, SelectionData> pendingSelections = new ConcurrentHashMap<>();
   private final MessagingService messagingService;
   private static final String MUSIC_CHANNEL_NAME = "music";
 
