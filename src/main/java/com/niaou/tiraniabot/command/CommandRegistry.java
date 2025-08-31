@@ -1,6 +1,6 @@
 package com.niaou.tiraniabot.command;
 
-import com.niaou.tiraniabot.module.BotModule;
+import com.niaou.tiraniabot.context.Context;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,28 +17,28 @@ public class CommandRegistry {
 
   public CommandRegistry(List<Command> commandList) {
     for (Command cmd : commandList) {
-      for (BotModule module : cmd.getModules()) {
-        Map<String, Command> moduleCommands =
-            commands.computeIfAbsent(module.getValue(), _ -> new HashMap<>());
+      for (Context context : cmd.getContexts()) {
+        Map<String, Command> contextCommands =
+            commands.computeIfAbsent(context.getValue(), _ -> new HashMap<>());
 
-        moduleCommands.put(cmd.getName().toLowerCase(), cmd);
+        contextCommands.put(cmd.getName().toLowerCase(), cmd);
 
         for (String alias : cmd.getAliases()) {
-          moduleCommands.put(alias.toLowerCase(), cmd);
+          contextCommands.put(alias.toLowerCase(), cmd);
         }
       }
     }
     instance = this;
   }
 
-  public Command getCommand(BotModule module, String name) {
-    Map<String, Command> moduleCommands = commands.get(module.getValue());
-    return moduleCommands != null ? moduleCommands.get(name.toLowerCase()) : null;
+  public Command getCommand(Context context, String name) {
+    Map<String, Command> contextCommands = commands.get(context.getValue());
+    return contextCommands != null ? contextCommands.get(name.toLowerCase()) : null;
   }
 
-  public Collection<Command> getAllModuleCommands(BotModule module) {
-    Map<String, Command> moduleCommands = commands.get(module.getValue());
-    return moduleCommands == null ? List.of() : new HashSet<>(moduleCommands.values());
+  public Collection<Command> getAllContextCommands(Context context) {
+    Map<String, Command> contextCommands = commands.get(context.getValue());
+    return contextCommands == null ? List.of() : new HashSet<>(contextCommands.values());
   }
 
   public Collection<Command> getAllCommands() {

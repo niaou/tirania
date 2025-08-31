@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class PauseCommand extends AbstractMusicCommand {
 
   public PauseCommand(MusicService musicService, MessagingService messagingService) {
-    super("!pause", "Pause playback", 4, List.of(), messagingService, musicService);
+    super("!pause", "Pause playback", 40000, List.of(), messagingService, musicService);
   }
 
   @Override

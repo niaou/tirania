@@ -12,7 +12,8 @@ import org.springframework.stereotype.Service;
 public class QueueCommand extends AbstractMusicCommand {
 
   public QueueCommand(MusicService musicService, MessagingService messagingService) {
-    super("!queue", "Show the current music queue", 6, List.of(), messagingService, musicService);
+    super(
+        "!queue", "Show the current music queue", 60000, List.of(), messagingService, musicService);
   }
 
   @Override

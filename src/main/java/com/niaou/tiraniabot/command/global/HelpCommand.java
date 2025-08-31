@@ -3,8 +3,8 @@ package com.niaou.tiraniabot.command.global;
 import com.niaou.tiraniabot.command.AbstractCommand;
 import com.niaou.tiraniabot.command.Command;
 import com.niaou.tiraniabot.command.CommandRegistry;
-import com.niaou.tiraniabot.module.BotModule;
-import com.niaou.tiraniabot.module.ModuleResolver;
+import com.niaou.tiraniabot.context.Context;
+import com.niaou.tiraniabot.context.ContextResolver;
 import com.niaou.tiraniabot.service.MessagingService;
 import java.awt.Color;
 import java.util.Collection;
@@ -17,9 +17,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class HelpCommand extends AbstractCommand {
 
-  private final ModuleResolver resolver;
+  private final ContextResolver resolver;
 
-  public HelpCommand(MessagingService messagingService, ModuleResolver resolver) {
+  public HelpCommand(MessagingService messagingService, ContextResolver resolver) {
     super(
         "!help",
         "Show available commands. Use '!help all' for all modules.",
@@ -30,20 +30,20 @@ public class HelpCommand extends AbstractCommand {
   }
 
   @Override
-  public List<BotModule> getModules() {
-    return List.of(BotModule.GLOBAL, BotModule.MUSIC);
+  public List<Context> getContexts() {
+    return List.of(Context.GLOBAL, Context.MUSIC);
   }
 
   @Override
   public void execute(MessageReceivedEvent event, String args) {
-    BotModule module = resolver.resolveModule(event.getChannel(), args);
+    Context context = resolver.resolveContext(event.getChannel(), args);
     CommandRegistry registry = CommandRegistry.getInstance();
 
     Collection<Command> commandsToShow;
-    if (module == BotModule.GLOBAL) {
+    if (context == Context.GLOBAL) {
       commandsToShow = registry.getAllCommands();
     } else {
-      commandsToShow = registry.getAllModuleCommands(module);
+      commandsToShow = registry.getAllContextCommands(context);
     }
 
     List<Command> sortedCommands =
@@ -54,19 +54,19 @@ public class HelpCommand extends AbstractCommand {
             .toList();
 
     EmbedBuilder embed = new EmbedBuilder();
-    embed.setTitle(module == BotModule.MUSIC ? "🎵 Music Commands" : "Available Commands");
-    embed.setColor(module == BotModule.MUSIC ? Color.CYAN : Color.ORANGE);
+    embed.setTitle(context == Context.MUSIC ? "🎵 Music Commands" : "Available Commands");
+    embed.setColor(context == Context.MUSIC ? Color.CYAN : Color.ORANGE);
     embed.setDescription("Here are the commands you can use:");
 
     for (Command cmd : sortedCommands) {
       String name = (cmd instanceof AbstractCommand ac) ? ac.getDisplayName() : cmd.getName();
-      String modulesStr =
-          module == BotModule.GLOBAL
+      String contextStr =
+          context == Context.GLOBAL
               ? " **["
-                  + String.join(", ", cmd.getModules().stream().map(BotModule::getValue).toList())
+                  + String.join(", ", cmd.getContexts().stream().map(Context::getValue).toList())
                   + "]**"
               : "";
-      embed.addField(name, cmd.getDescription() + modulesStr, false);
+      embed.addField(name, cmd.getDescription() + contextStr, false);
     }
 
     messagingService.sendChannelEmbedMessage(event.getChannel(), embed.build());

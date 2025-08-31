@@ -1,6 +1,6 @@
 package com.niaou.tiraniabot.command;
 
-import com.niaou.tiraniabot.module.BotModule;
+import com.niaou.tiraniabot.context.Context;
 import java.util.List;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
@@ -10,8 +10,8 @@ public interface Command {
 
   String getDescription();
 
-  default List<BotModule> getModules() {
-    return List.of(BotModule.GLOBAL);
+  default List<Context> getContexts() {
+    return List.of(Context.GLOBAL);
   }
 
   default List<String> getAliases() {

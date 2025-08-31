@@ -1,16 +1,16 @@
-package com.niaou.tiraniabot.module;
+package com.niaou.tiraniabot.context;
 
 import lombok.Getter;
 
 @Getter
-public enum BotModule {
+public enum Context {
   GLOBAL("global"),
   MUSIC("music"),
   ADMIN("admin");
 
   private final String value;
 
-  BotModule(String value) {
+  Context(String value) {
     this.value = value;
   }
 

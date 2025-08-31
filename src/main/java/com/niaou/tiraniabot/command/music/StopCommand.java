@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class StopCommand extends AbstractMusicCommand {
 
   public StopCommand(MusicService musicService, MessagingService messagingService) {
-    super("!stop", "Stop and clear the queue", 7, List.of(), messagingService, musicService);
+    super("!stop", "Stop and clear the queue", 70000, List.of(), messagingService, musicService);
   }
 
   @Override

@@ -12,7 +12,8 @@ import org.springframework.stereotype.Service;
 public class NextCommand extends AbstractMusicCommand {
 
   protected NextCommand(MusicService musicService, MessagingService messagingService) {
-    super("!next", "Skip the current track", 3, List.of(), messagingService, musicService);
+    super(
+        "!next", "Skip the current track", 30000, List.of("!skip"), messagingService, musicService);
   }
 
   @Override

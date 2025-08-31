@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class ResumeCommand extends AbstractMusicCommand {
 
   public ResumeCommand(MusicService musicService, MessagingService messagingService) {
-    super("!resume", "Resume playback", 5, List.of(), messagingService, musicService);
+    super("!resume", "Resume playback", 50000, List.of(), messagingService, musicService);
   }
 
   @Override

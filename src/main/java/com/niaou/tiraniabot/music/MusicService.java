@@ -184,13 +184,7 @@ public class MusicService {
   public void current(MessageChannel channel, GuildMusicManager manager) {
     AudioTrack track = manager.getPlayingTrack();
     if (track != null) {
-      String msg =
-          String.format(
-              "🎶 Now playing: **%s** [`%s / %s`] <%s>",
-              track.getInfo().title,
-              formatTime(track.getPosition()),
-              formatTime(track.getDuration()),
-              track.getInfo().uri);
+      String msg = getCurrentTrackInfo(track);
       messagingService.sendChannelMessage(channel, msg);
     } else {
       messagingService.sendChannelMessage(channel, "Nothing is playing.");
@@ -206,7 +200,7 @@ public class MusicService {
     StringBuilder sb = new StringBuilder();
     AudioTrack current = manager.getPlayingTrack();
     if (current != null) {
-      sb.append("🎵 Now playing: ").append(current.getInfo().title).append("\n");
+      sb.append(getCurrentTrackInfo(current)).append("\n");
     }
 
     if (!manager.queue.isEmpty()) {
@@ -215,6 +209,9 @@ public class MusicService {
       for (AudioTrack track : manager.queue) {
         sb.append(i++).append(". ").append(track.getInfo().title).append("\n");
       }
+    }
+    {
+      sb.append("The queue is empty!");
     }
     messagingService.sendChannelMessage(channel, sb.toString());
   }
@@ -243,6 +240,15 @@ public class MusicService {
         channel,
         builder.build(),
         message -> pendingSelections.put(message.getIdLong(), new SelectionData(manager, tracks)));
+  }
+
+  private String getCurrentTrackInfo(AudioTrack track) {
+    return String.format(
+        "🎶 Now playing: **%s** [`%s / %s`] <%s>",
+        track.getInfo().title,
+        formatTime(track.getPosition()),
+        formatTime(track.getDuration()),
+        track.getInfo().uri);
   }
 
   private String formatTime(long millis) {

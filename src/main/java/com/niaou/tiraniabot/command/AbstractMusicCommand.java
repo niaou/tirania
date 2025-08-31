@@ -1,6 +1,6 @@
 package com.niaou.tiraniabot.command;
 
-import com.niaou.tiraniabot.module.BotModule;
+import com.niaou.tiraniabot.context.Context;
 import com.niaou.tiraniabot.music.GuildMusicManager;
 import com.niaou.tiraniabot.music.MusicService;
 import com.niaou.tiraniabot.service.MessagingService;
@@ -33,8 +33,8 @@ public abstract class AbstractMusicCommand extends AbstractCommand {
   }
 
   @Override
-  public List<BotModule> getModules() {
-    return List.of(BotModule.MUSIC);
+  public List<Context> getContexts() {
+    return List.of(Context.MUSIC);
   }
 
   protected GuildMusicManager getMusicManager(MessageReceivedEvent event) {
@@ -70,20 +70,18 @@ public abstract class AbstractMusicCommand extends AbstractCommand {
     GuildVoiceState userVoiceState = member.getVoiceState();
 
     if (!member.hasPermission(musicAudioChannel, Permission.VOICE_CONNECT)) {
-      messagingService.sendPrivateOrFallbackMessage(
-          member,
+      messagingService.sendChannelMessage(
           channel,
           "🚫 You don’t have permission to join and queue tracks in the music channel. Please contact a mod");
       return false;
     }
 
     if (userVoiceState == null || !userVoiceState.inAudioChannel()) {
-      messagingService.sendTemporaryMessage(
+      messagingService.sendChannelMessage(
           channel,
           "❌ You need to join the <#"
               + musicAudioChannel.getId()
-              + "> voice channel to use music commands!",
-          30);
+              + "> voice channel to use music commands!");
       return false;
     }
 

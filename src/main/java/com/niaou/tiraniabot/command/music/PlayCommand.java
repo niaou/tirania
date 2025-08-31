@@ -17,7 +17,7 @@ public class PlayCommand extends AbstractMusicCommand {
     super(
         "!play",
         "Play a track or search by keywords",
-        1,
+        10000,
         List.of(),
         messagingService,
         musicService);

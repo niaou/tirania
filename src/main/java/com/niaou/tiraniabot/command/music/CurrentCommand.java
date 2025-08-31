@@ -15,7 +15,7 @@ public class CurrentCommand extends AbstractMusicCommand {
     super(
         "!current",
         "Show the currently playing track",
-        2,
+        20000,
         List.of("!nowplaying", "!np"),
         messagingService,
         musicService);

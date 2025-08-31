@@ -5,30 +5,31 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.niaou.tiraniabot.music.MusicAdapter;
+import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 class TiraniaApplicationTests {
 
-  private MusicAdapter musicAdapter;
+  private List<ListenerAdapter> adapters;
 
   @BeforeEach
   void setUp() {
-    musicAdapter = Mockito.mock(MusicAdapter.class);
+    adapters = List.of(mock(ListenerAdapter.class), mock(ListenerAdapter.class));
   }
 
   @Test
   void run_noToken_throwsException() {
-    TiraniaApplication app = new TiraniaApplication(musicAdapter);
+    TiraniaApplication app = new TiraniaApplication(adapters);
     assertThatThrownBy(app::run)
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("TiRania token is not set");
@@ -36,7 +37,7 @@ class TiraniaApplicationTests {
 
   @Test
   void run_withToken_startsJda() throws Exception {
-    TiraniaApplication app = new TiraniaApplication(musicAdapter);
+    TiraniaApplication app = new TiraniaApplication(adapters);
 
     var field = TiraniaApplication.class.getDeclaredField("token");
     field.setAccessible(true);
@@ -58,7 +59,7 @@ class TiraniaApplicationTests {
       mocked.verify(() -> JDABuilder.createDefault("fake-token"));
       verify(builderMock)
           .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
-      verify(builderMock).addEventListeners(musicAdapter);
+      verify(builderMock, times(adapters.size())).addEventListeners(any(ListenerAdapter.class));
       verify(builderMock).build();
     }
   }
