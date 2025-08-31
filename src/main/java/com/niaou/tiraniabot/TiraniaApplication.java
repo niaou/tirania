@@ -12,7 +12,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.util.StringUtils;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.niaou.tiraniabot"})
 public class TiraniaApplication implements CommandLineRunner {
 
   private static final Logger logger = LoggerFactory.getLogger(TiraniaApplication.class);
