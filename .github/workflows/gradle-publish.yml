@@ -101,6 +101,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set release version in build.gradle
+        run: |
+          TAG=${{ steps.tag.outputs.new_tag }}
+          TAG=${TAG#v}
+          sed -i "s/^version = .*/version = \"$TAG\"/" build.gradle
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git commit -am "Set release version $TAG [skip ci]"
+          git push
+
       - name: Log in to DockerHub
         uses: docker/login-action@v3
         with:
