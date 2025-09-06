@@ -29,6 +29,7 @@ Currently includes a **music module**🎶, with more features planned in the fut
 
 | Command              | Description                       |
 |----------------------|-----------------------------------|
+| `!roll XdY`          | Roll one or multiple dice         |
 | `!play <url\search>` | Play or search a track            |
 | `!next`              | Skip to the next track            |
 | `!queue`             | Display the current queue         |
