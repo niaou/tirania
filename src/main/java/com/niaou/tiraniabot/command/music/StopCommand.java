@@ -1,6 +1,5 @@
 package com.niaou.tiraniabot.command.music;
 
-import com.niaou.tiraniabot.command.AbstractMusicCommand;
 import com.niaou.tiraniabot.music.GuildMusicManager;
 import com.niaou.tiraniabot.music.MusicService;
 import com.niaou.tiraniabot.service.MessagingService;

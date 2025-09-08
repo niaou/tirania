@@ -41,7 +41,6 @@ public class RollCommand extends AbstractCommand {
       total += roll;
     }
 
-    // Find the highest roll
     int maxRoll = rolls.stream().mapToInt(Integer::intValue).max().orElse(0);
 
     String rollsText =
