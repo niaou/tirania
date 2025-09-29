@@ -6,6 +6,7 @@ import lombok.Getter;
 public enum Context {
   GLOBAL("global"),
   MUSIC("music"),
+  MOD("moderator"),
   ADMIN("admin");
 
   private final String value;

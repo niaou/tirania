@@ -1,5 +1,7 @@
 package com.niaou.tiraniabot.service;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import net.dv8tion.jda.api.entities.Member;
@@ -12,6 +14,12 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class JDAMessagingService implements MessagingService {
+
+  // userId+messageKey -> lastSentTimestamp
+  private final Map<String, Long> privateMessageTimestamps = new ConcurrentHashMap<>();
+
+  // default TTL 24 hours
+  private static final long DEFAULT_TTL_MS = 24 * 60 * 60 * 1000L;
 
   @Override
   public void sendChannelMessage(MessageChannel channel, String message) {
@@ -37,6 +45,25 @@ public class JDAMessagingService implements MessagingService {
         .queue(
             privateChannel -> privateChannel.sendMessage(message).queue(),
             _ -> System.out.println("❌ Could not send DM to " + member.getEffectiveName()));
+  }
+
+  @Override
+  public void sendPrivateMessageWithTtl(
+      Member member, String message, String messageKey, long ttlMs) {
+    String key = member.getId() + ":" + messageKey;
+    long now = System.currentTimeMillis();
+
+    Long lastSent = privateMessageTimestamps.get(key);
+    if (lastSent != null && (now - lastSent) < ttlMs) {
+      return;
+    }
+    sendPrivateMessage(member, message);
+    privateMessageTimestamps.put(key, now);
+  }
+
+  @Override
+  public void sendPrivateMessageWithTtl(Member member, String message, String messageKey) {
+    sendPrivateMessageWithTtl(member, message, messageKey, DEFAULT_TTL_MS);
   }
 
   @Override

@@ -22,6 +22,15 @@ public interface MessagingService {
   /** Send a private/direct message to a member. */
   void sendPrivateMessage(Member member, String message);
 
+  /**
+   * Sends a private message with TTL, to avoid spamming the same user with the same message in a
+   * short period.
+   */
+  void sendPrivateMessageWithTtl(Member member, String message, String messageKey, long ttlMs);
+
+  /** Overload sendPrivateMessageWithTtl with default ttl */
+  void sendPrivateMessageWithTtl(Member member, String message, String messageKey);
+
   /** Try to send a private message, but fallback to channel if DM fails. */
   void sendPrivateOrFallbackMessage(Member member, MessageChannel fallbackChannel, String message);
 
