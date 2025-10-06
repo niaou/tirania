@@ -84,7 +84,6 @@ public class KickCommand extends AbstractModCommand {
                 future.complete(null);
               });
     }
-
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenRun(onComplete);
   }
 
