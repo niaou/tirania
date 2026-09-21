@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.audio.AudioModuleConfig;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +52,7 @@ class TiraniaApplicationTests {
 
       when(builderMock.enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT))
           .thenReturn(builderMock);
+      when(builderMock.setAudioModuleConfig(any(AudioModuleConfig.class))).thenReturn(builderMock);
       when(builderMock.addEventListeners(any())).thenReturn(builderMock);
       when(builderMock.build()).thenReturn(jdaMock);
 
@@ -59,6 +61,7 @@ class TiraniaApplicationTests {
       mocked.verify(() -> JDABuilder.createDefault("fake-token"));
       verify(builderMock)
           .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
+      verify(builderMock).setAudioModuleConfig(any(AudioModuleConfig.class));
       verify(builderMock, times(adapters.size())).addEventListeners(any(ListenerAdapter.class));
       verify(builderMock).build();
     }

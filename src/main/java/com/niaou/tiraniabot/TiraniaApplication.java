@@ -1,7 +1,9 @@
 package com.niaou.tiraniabot;
 
+import club.minnced.discord.jdave.interop.JDaveSessionFactory;
 import java.util.List;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.audio.AudioModuleConfig;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.slf4j.Logger;
@@ -39,7 +41,10 @@ public class TiraniaApplication implements CommandLineRunner {
     try {
       JDABuilder builder =
           JDABuilder.createDefault(token)
-              .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT);
+              .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT)
+              // Discord rejects voice connections that don't support the DAVE protocol
+              .setAudioModuleConfig(
+                  new AudioModuleConfig().withDaveSessionFactory(new JDaveSessionFactory()));
       adapters.forEach(builder::addEventListeners);
       builder.build();
     } catch (Exception e) {

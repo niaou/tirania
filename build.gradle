@@ -19,7 +19,7 @@ gitProperties {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -65,7 +65,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'net.dv8tion:JDA:5.6.1'
+    implementation 'net.dv8tion:JDA:6.7.0'
+    // DAVE (end-to-end voice encryption) is mandatory for Discord voice connections
+    implementation 'club.minnced:jdave-api:0.1.8'
+    implementation 'club.minnced:jdave-native-linux-x86-64:0.1.8'
+    implementation 'club.minnced:jdave-native-linux-aarch64:0.1.8'
     implementation 'dev.arbjerg:lavaplayer:2.2.7'
     implementation 'dev.lavalink.youtube:v2:1.18.2'
 

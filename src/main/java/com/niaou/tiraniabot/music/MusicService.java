@@ -5,35 +5,42 @@ import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
+import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import dev.lavalink.youtube.YoutubeAudioSourceManager;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.dv8tion.jda.api.components.actionrow.ActionRow;
+import net.dv8tion.jda.api.components.buttons.Button;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 import net.dv8tion.jda.api.entities.channel.middleman.MessageChannel;
 import net.dv8tion.jda.api.events.interaction.component.ButtonInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.interactions.components.ActionRow;
-import net.dv8tion.jda.api.interactions.components.buttons.Button;
 import net.dv8tion.jda.api.managers.AudioManager;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MusicService {
+
+  private static final Logger logger = LoggerFactory.getLogger(MusicService.class);
 
   private final AudioPlayerManager playerManager;
   private final Map<Long, GuildMusicManager> musicManagers = new ConcurrentHashMap<>();
   final Map<Long, SelectionData> pendingSelections = new ConcurrentHashMap<>();
   private final MessagingService messagingService;
   private static final String MUSIC_CHANNEL_NAME = "music";
+  private static final String YOUTUBE_SOURCE_NAME = "youtube";
 
   public MusicService(MessagingService messagingService) {
     this.messagingService = messagingService;
@@ -80,6 +87,14 @@ public class MusicService {
           AudioPlayer player = playerManager.createPlayer();
           var manager =
               new GuildMusicManager(player, new LinkedList<>(), channel, messagingService);
+          player.addListener(
+              new AudioEventAdapter() {
+                @Override
+                public void onTrackException(
+                    AudioPlayer player, AudioTrack track, FriendlyException exception) {
+                  handlePlaybackFailure(manager, track, exception);
+                }
+              });
           guild.getAudioManager().setSendingHandler(new MusicSendHandler(player));
           return manager;
         });
@@ -100,8 +115,21 @@ public class MusicService {
       audioManager.openAudioConnection(channels.getFirst());
     }
 
-    String loadQuery = query.startsWith("http") ? query : "ytsearch:" + query;
+    boolean isUrl = query.startsWith("http");
+    loadTracks(channel, musicManager, query, isUrl ? query : "ytsearch:" + query, !isUrl);
+  }
 
+  /**
+   * Loads {@code loadQuery}. YouTube may refuse requests from the bot's IP, so when a YouTube
+   * search finds nothing or fails and {@code searchSoundCloudOnFailure} is set, the same text is
+   * searched on SoundCloud instead, which needs no authentication.
+   */
+  private void loadTracks(
+      MessageChannel channel,
+      GuildMusicManager musicManager,
+      String query,
+      String loadQuery,
+      boolean searchSoundCloudOnFailure) {
     playerManager.loadItemOrdered(
         musicManager,
         loadQuery,
@@ -109,8 +137,7 @@ public class MusicService {
           @Override
           public void trackLoaded(AudioTrack track) {
             musicManager.queue(track);
-            event
-                .getChannel()
+            channel
                 .sendMessage(
                     (musicManager.getPlayingTrack() == track ? "🎵 Now playing: " : "➕ Queued: ")
                         + track.getInfo().title)
@@ -133,15 +160,95 @@ public class MusicService {
 
           @Override
           public void noMatches() {
+            if (searchSoundCloudOnFailure) {
+              searchSoundCloud(channel, musicManager, query);
+              return;
+            }
             messagingService.sendChannelMessage(channel, "❌ No results found for: " + query);
           }
 
           @Override
           public void loadFailed(FriendlyException exception) {
+            if (searchSoundCloudOnFailure) {
+              logger.warn("YouTube search failed for '{}'", query, exception);
+              searchSoundCloud(channel, musicManager, query);
+              return;
+            }
             messagingService.sendChannelMessage(
                 channel, "⚠ Failed to load track: " + exception.getMessage());
           }
         });
+  }
+
+  private void searchSoundCloud(
+      MessageChannel channel, GuildMusicManager musicManager, String query) {
+    loadTracks(channel, musicManager, query, "scsearch:" + query, false);
+  }
+
+  /**
+   * Called when a track fails while playing, typically because YouTube refused the stream. Tries to
+   * find the same song on SoundCloud so the queue keeps going instead of going silent.
+   */
+  private void handlePlaybackFailure(
+      GuildMusicManager manager, AudioTrack failed, FriendlyException exception) {
+    AudioTrackInfo info = failed.getInfo();
+    logger.warn("Playback of '{}' failed: {}", info.title, exception.getMessage());
+
+    boolean fromYoutube =
+        failed.getSourceManager() != null
+            && YOUTUBE_SOURCE_NAME.equals(failed.getSourceManager().getSourceName());
+    if (!fromYoutube) {
+      messagingService.sendChannelMessage(
+          manager.channel, "⚠ Couldn't play **" + info.title + "**, skipping it.");
+      return;
+    }
+
+    messagingService.sendChannelMessage(
+        manager.channel,
+        "⚠ YouTube wouldn't play **" + info.title + "**, trying SoundCloud instead...");
+    searchSoundCloudForFallback(manager, info.title);
+  }
+
+  private void searchSoundCloudForFallback(GuildMusicManager manager, String title) {
+    playerManager.loadItemOrdered(
+        manager,
+        "scsearch:" + title,
+        new AudioLoadResultHandler() {
+          @Override
+          public void trackLoaded(AudioTrack track) {
+            queueFallback(manager, track);
+          }
+
+          @Override
+          public void playlistLoaded(AudioPlaylist playlist) {
+            if (playlist.getTracks().isEmpty()) {
+              noMatches();
+              return;
+            }
+            queueFallback(manager, playlist.getTracks().getFirst());
+          }
+
+          @Override
+          public void noMatches() {
+            messagingService.sendChannelMessage(
+                manager.channel, "❌ Couldn't find **" + title + "** on SoundCloud either.");
+          }
+
+          @Override
+          public void loadFailed(FriendlyException exception) {
+            messagingService.sendChannelMessage(
+                manager.channel, "❌ SoundCloud lookup failed: " + exception.getMessage());
+          }
+        });
+  }
+
+  private void queueFallback(GuildMusicManager manager, AudioTrack track) {
+    manager.queue(track);
+    messagingService.sendChannelMessage(
+        manager.channel,
+        (manager.getPlayingTrack() == track ? "🎵 Now playing: " : "➕ Queued: ")
+            + track.getInfo().title
+            + " (SoundCloud)");
   }
 
   public void skip(MessageChannel channel, GuildMusicManager manager) {

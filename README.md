@@ -75,6 +75,6 @@ java -jar build/libs/tirania-bot.jar
 
 ## Requirements
 
-- Java 24+
+- Java 25+
 - Gradle
 - Discord bot token
