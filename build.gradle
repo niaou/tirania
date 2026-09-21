@@ -9,7 +9,7 @@ plugins {
 }
 
 group = 'com.niaou'
-version = "0.4.3-SNAPSHOT"
+version = "0.4.3"
 description = 'tirania'
 
 gitProperties {
